@@ -1,0 +1,17 @@
+{
+  "name": "axe-standalone",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "keywords": [
+    "accessibility",
+    "a11",
+    "axe-core",
+    "axe"
+  ],
+  "author": "Bence Varga",
+  "license": "MIT"
+}
