@@ -40,7 +40,7 @@ async function executeAxe(page) {
  * @param {object} axeReport
  * @throw {object}
  */
-function processAxeReport(axeReport) {
+function decorate(axeReport) {
 	if (!axeReport || !axeReport.violations) {
 		throw new Error('Invalid Axe Report!');
 	}
@@ -71,7 +71,6 @@ function sadPath(axeReport) {
 	log(chalk.red(`${noOfViolations} accessibility violations detected`));
 	axeReport.violations.forEach((data, idx) => {
 		log();
-		log();
 		log('  ', chalk.red(`${idx + 1}. ${data.description} (${data.id})`));
 		log('  ', chalk.grey(data.help));
 		log('  ', chalk.underline(data.impact));
@@ -81,12 +80,7 @@ function sadPath(axeReport) {
 
 		log('  ', chalk.grey('For detais, see: '), chalk.blue(data.helpUrl));
 	});
-	// throw the report to force the process to terminate with exit code 1
-	throw axeReport;
 }
-
-// close our stand-alone server when the web driver terminates
-Driver.on('exit', Server.stop);
 
 /**
  * Returns the first available port starting from the given number
@@ -106,26 +100,30 @@ async function getAvailablePort(port) {
  * @async
  * @param {string} indexHtml - used to specifiy the demo page of the component
  * @param {string} serverPath - document root 
+ * @return {Promise}
  */
-async function exec({ indexHtml, serverPath }) {
-	let exitCode = 0;
+async function exec({ indexHtml, serverPath, verbose }) {
 
-	try {
-		const port = await getAvailablePort(SERVER_PORT);
-		const path = serverPath || resolvePath(SERVER_PATH);
-		const serverConfig = await Server.start(port, path);
+	if (!verbose) console.log = () => {};
 
-		const url = `http://localhost:${serverConfig.port}/${indexHtml}`;
-		const page = await Driver.connect(url);
-		const riport = await executeAxe(page);
+	const port = await getAvailablePort(SERVER_PORT);
+	const path = serverPath || resolvePath(SERVER_PATH);
+	const server = new Server();
+	const serverConfig = await server.start(port, path);
 
-		processAxeReport(riport);
-	} catch (e) {
-		exitCode = 1;
-	} finally {
-		Driver.exit(exitCode);
-	}
+	const driver = new Driver();
+	driver.on('exit', server.stop);
+
+	const url = `http://localhost:${serverConfig.port}/${indexHtml}`;
+	const page = await driver.connect(url);
+	const report = await executeAxe(page);
+
+	await driver.exit();
+
+	console.log = log;
+
+	return report;
 }
 
-export { exec };
+export { exec, decorate };
 export default exec;

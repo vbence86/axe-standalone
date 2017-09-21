@@ -1,36 +1,38 @@
 import puppeteer from 'puppeteer';
 import Events from 'events';
 
-const emitter = new Events.EventEmitter();
+class Driver {
 
-let browser;
+	/**
+	 * Constructs a Driver instance
+	 * @return {object} 
+	 */
+	constructor() {
+		this.emitter = new Events.EventEmitter();
+		this.browser = null;
+	}
 
-const Driver = {
 	/**
      * Creates a Puppeteer instance and connects to the given address
      * @param {string} address 
      * @return {Promise} 
      */
 	async connect(address) {
-		browser = await puppeteer.launch();
-		console.log('Puppeteer web driver is launched...');
-		const page = await browser.newPage();
+		this.browser = await puppeteer.launch();
+		const page = await this.browser.newPage();
 		await page.goto(address, { waitUntil: 'networkidle' });
 		console.log(`Connected to ${address}`);
-		emitter.emit('connect');
+		this.emitter.emit('connect');
 		return page;
-	},
+	}
 
 	/**
-     * Closes the Puppeteer session and terminates the main process 
-     * with the given exit code
-     * @param {integer} code - Exit code
-     */
-	exit(code) {
-		emitter.emit('exit');
-		if (browser) browser.close();
-		process.exit(code);
-	},
+    * Closes the Puppeteer session
+    */
+	exit() {
+		this.emitter.emit('exit');
+		if (this.browser) this.browser.close();
+	}
 
 	/**
    * Registers listener to the given event
@@ -39,9 +41,10 @@ const Driver = {
    * @return {this}
    */
 	on(event, listener) {
-		emitter.on(event, listener);
+		this.emitter.on(event, listener);
 		return this;
-	},
+	}
+
 };
 
 export { Driver };
